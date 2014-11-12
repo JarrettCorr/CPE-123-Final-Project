@@ -1,0 +1,33 @@
+#lang racket
+(require rsound
+         2htdp/image)
+(provide struct
+         struct-copy)
+(provide (all-defined-out))
+
+;; a rect is a struct with width and height
+;; (rect number number)
+(struct rect (width height) #:prefab)
+
+;; an picture is a struct containing an image
+;; (picture p) wrapped to so we can call (picture? x)
+(struct picture (p) #:prefab)
+
+;; a slider is a rect with a value
+;; (slider number number decimal)
+(struct slider rect (value) #:prefab)
+;; a decimal is a number from 0.0 to 1.0
+
+;; an object is one of:
+;; -picture
+;; -slider
+
+;; a piece is a struct containing:
+;; -object
+;; -posn 
+;; (piece object posn)
+(struct piece (object pos) #:prefab)
+
+;; list-of-pieces is one of:
+;; -empty
+;; -(cons piece list-of-pieces)

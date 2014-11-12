@@ -1,0 +1,66 @@
+#lang racket
+(require lang/posn
+         rsound
+         2htdp/image)
+(provide struct
+         struct-copy)
+(provide (all-defined-out))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Data
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; a piece is (piece posn)
+;; -pos: a posn structure 
+(struct piece (pos) #:prefab)
+
+;; a rect is (rect posn number number)
+;; -w: width of the rectangle
+;; -h: height of the rectangle
+(struct rect piece (w h) #:prefab)
+
+;; an sprite is (sprite posn image)
+;; -image: a picture of some kind (ex (file "aaa.png"))
+(struct sprite piece (image) #:prefab)
+
+;; a slider is (slider posn number number number)
+;; -value: number from 0.0 to 1.0 that represents the
+;;;        relative height, 1.0 = top 0.0 = bottom
+(struct slider rect (value) #:prefab)
+
+;; list-of-pieces is one of:
+;; -empty
+;; -(cons piece list-of-pieces)
+
+;; a world is (ws list-of-pieces maybe-piece)
+;; pl: a list-of-pieces contianed in the world
+;; focus: the piece currently being focused upon
+;;        -> either piece? or false (interp. as no piece being focused)
+(struct ws (pl focus))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Constants
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; world constants: 
+(define XSIZE 100) ;; scene's max x value
+(define YSIZE 100) ;; scene's max y value
+
+;; slider constants: 
+;; 0 > sY-top > sY-bottom > YSIZE
+(define sY-top 10)    ;; slider's highest pos 
+(define sY-bottom 90) ;; slider's lowest pos
+
+(define sH 0) ;; sliders' height
+(define sW 0) ;; sliders' width
+
+;; Initial world state setup:
+(define INITIAL_WORLD 
+  (ws (list
+       (slider (make-posn 0 0) sH sW 0)
+       (slider (make-posn 0 0) sH sW 0)
+       (slider (make-posn 0 0) sH sW 0))
+      #f))
+
+;; world state box is used for signals
+(define ws-box (box INITIAL_WORLD))
