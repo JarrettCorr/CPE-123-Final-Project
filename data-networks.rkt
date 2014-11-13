@@ -44,27 +44,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; world constants: 
-(define XSIZE 100) ;; scene's max x value
-(define YSIZE 100) ;; scene's max y value
+(define XSIZE 400) ;; scene's max x value
+(define YSIZE 300) ;; scene's max y value
 
 ;; slider constants: 
 ;; 0 > sY-top > sY-bottom > YSIZE
-(define sY-top 10)    ;; slider's highest pos 
-(define sY-bottom 90) ;; slider's lowest pos
+(define sY-top (* .1 YSIZE))    ;; slider's highest pos 
+(define sY-bottom (* .9 YSIZE)) ;; slider's lowest pos
+(define sY-midpt (/ (+ sY-bottom sY-top) 2)) ;;midpoint of the sliders
 
-(define sH 0) ;; sliders' height
-(define sW 0) ;; sliders' width
+(define sH 10) ;; sliders' height
+(define sW 10) ;; sliders' width
 
 ;; Initial world state setup:
 (define INITIAL_WORLD 
   (ws (list
-       (slider (make-posn 0 0) sH sW 0)
-       (slider (make-posn 0 0) sH sW 0)
-       (slider (make-posn 0 0) sH sW 0))
+       (slider (make-posn 100 sY-midpt) sH sW 0)
+       (slider (make-posn 200 sY-midpt) sH sW 0)
+       (slider (make-posn 300 sY-midpt) sH sW 0))
       #f))
 
 ;; world state box is used for signals
 (define ws-box (box INITIAL_WORLD))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
