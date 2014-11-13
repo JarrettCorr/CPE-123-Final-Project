@@ -1,7 +1,8 @@
 #lang racket
 (require lang/posn
          rsound
-         2htdp/image)
+         2htdp/image
+         test-engine/racket-tests)
 (provide struct
          struct-copy)
 (provide (all-defined-out))
@@ -64,3 +65,26 @@
 
 ;; world state box is used for signals
 (define ws-box (box INITIAL_WORLD))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helper Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (rect-x rect) (posn-x (piece-pos rect)))
+(define (rect-y rect) (posn-y (piece-pos rect)))
+
+; checks if the position (make-posn x y) is in the rectangle
+; integer integer rect -> boolean
+(check-expect (in-rect? 3 4 (rect (make-posn 2 3) 2 3)) #t)
+
+(define (in-rect? posn rect) 
+  (local [(define rX (rect-x rect)) (define rW (/ (rect-w rect) 2))
+          (define rY (rect-y rect)) (define rH (/ (rect-h rect) 2))]                         
+    (and (<= (- rX rW) (posn-x posn) (+ rX rW)) (<= (- rY rH) (posn-y posn) (+ rY rH)))))
+
+
+
+(test)
+
+
