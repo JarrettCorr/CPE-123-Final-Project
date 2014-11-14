@@ -52,8 +52,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; world constants: 
-(define XSIZE 800) ;; scene's max x value
-(define YSIZE 900) ;; scene's max y value
+(define XSIZE 400) ;; scene's max x value
+(define YSIZE 600) ;; scene's max y value
 
 ;; slider constants: 
 ;; 0 > sY-top > sY-bottom > YSIZE
@@ -61,15 +61,15 @@
 (define sY-bottom (* .9 YSIZE)) ;; slider's lowest pos
 (define sY-midpt (/ (+ sY-bottom sY-top) 2)) ;;midpoint of the sliders
 
-(define sH 10) ;; sliders' height
-(define sW 10) ;; sliders' width
+(define sH 20) ;; sliders' height
+(define sW 20) ;; sliders' width
 
 ;; Initial world state setup:
 (define INITIAL_WORLD 
   (ws (list
-       (slider "one" (make-posn 100 sY-midpt) sH sW 0)
-       (slider "two" (make-posn 200 sY-midpt) sH sW 0)
-       (slider "three" (make-posn 300 sY-midpt) sH sW 0))
+       (slider "one" (make-posn 100 (* .75 sY-bottom)) sH sW 0.25)
+       (slider "two" (make-posn 200 sY-top) sH sW 1)
+       (slider "three" (make-posn 300 sY-bottom) sH sW 0))
       #f))
 
 ;; world state box is used for signals
@@ -108,8 +108,8 @@
           (define rY (get-y rect)) (define rH (/ (rect-h rect) 2))]                         
     (and (<= (- rX rW) (posn-x posn) (+ rX rW)) (<= (- rY rH) (posn-y posn) (+ rY rH)))))
 
-(check-expect (in-rect? (make-posn 3 4) (rect (make-posn 2 3) 2 3)) #t)
-(check-expect (in-rect? (make-posn 10 10) (rect (make-posn 2 3) 2 3)) #f)
+(check-expect (in-rect? (make-posn 3 4) (rect "one" (make-posn 2 3) 2 3)) #t)
+(check-expect (in-rect? (make-posn 10 10) (rect "one" (make-posn 2 3) 2 3)) #f)
 
 ;; Circle helper functions:
 
@@ -118,10 +118,10 @@
 (define (in-circ? posn circle)                        
   (< (distance posn (piece-pos circle)) (circ-r circle)))
 
-(check-expect (in-circ? (make-posn 3 4) (circ (make-posn 2 2) 3)) #t)
-(check-expect (in-circ? (make-posn 10 10) (circ (make-posn 2 2) 3)) #f)
+(check-expect (in-circ? (make-posn 3 4) (circ "one" (make-posn 2 2) 3)) #t)
+(check-expect (in-circ? (make-posn 10 10) (circ "one" (make-posn 2 2) 3)) #f)
 
 
-(test)
+;(test)
 
 

@@ -4,7 +4,7 @@
          2htdp/image
          test-engine/racket-tests)
 (require (file "data-networks.rkt"))
-
+(provide mouse-handler)
 
 ;; determines which slider is being selected
 ;; which-slider number list-of-pieces -> maybe-piece
@@ -30,7 +30,8 @@
      (local [(define updated-s (update-slider (ws-focus w) y))]
        (struct-copy ws w 
                     [pl (push-piece (ws-pl w) updated-s)]
-                    [focus updated-s]))]))
+                    [focus updated-s]))]
+    [else w]))
          
 ;; update slider updates a given slider's
 ;; pos and value given the mouse y coord
@@ -40,7 +41,7 @@
     [(define new-y (max sY-top (min sY-bottom mouse-y)))]     
     (struct-copy slider s 
                  [pos #:parent piece (make-posn (get-x s) new-y)]
-                 [value (/ (- sY-bottom new-y) sY-bottom)])))
+                 [value (/ (- sY-bottom (- new-y sY-top) sY-top) (- sY-bottom sY-top))])))
 
 ;; push-piece replaces an updated version of a piece back into the list
 ;; list-of-pieces slider -> list-of-pieces
@@ -50,6 +51,6 @@
                [else i]))
        pieces))         
 
-(test)
+;(test)
 
 
