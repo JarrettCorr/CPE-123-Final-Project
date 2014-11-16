@@ -6,12 +6,12 @@
 (provide (all-defined-out))
 
 ; this cretes an empty scene
-(define BKG (place-image (bitmap/file "C:/Users/Andrea/Pictures/backgroundImage.jpeg") (/ XSIZE 2) (/ YSIZE 2) (empty-scene XSIZE YSIZE)))
+(define BKG (place-image (bitmap/file "backgroundImage.jpeg") (/ XSIZE 2) (/ YSIZE 2) (empty-scene XSIZE YSIZE)))
 ; these are strings that define the color of each element type
 (define SLIDERCOLOR "SlateGray")
 (define TEXTCOLOR "Azure")
 (define RAILCOLOR "Light Steel Blue")
-(define SLIDERIMAGE (bitmap/file "C:/Users/Andrea/Pictures/slider2.jpg"))
+(define SLIDERIMAGE (bitmap/file "slider2.jpg"))
 
 
 (define (positionList world)
