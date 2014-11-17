@@ -14,7 +14,7 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.bak
-compiled\
+compiled/
 
 # =========================
 # Operating System Files
