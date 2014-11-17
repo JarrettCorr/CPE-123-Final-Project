@@ -17,12 +17,15 @@
           [(< i (* -1 cut-off)) (- cut-off (* (+ i cut-off) above-scale))]
           [else i])]))
 
+;; unboxes first slider value for speeed of playhead
 (define (get-speed) (max .5 (* 4 (slider-value (first (ws-pl (unbox ws-box)))))))
+;; uboxes second and third slider values for distortion control
 (define (get-cutoff) (slider-value (second (ws-pl (unbox ws-box)))))
 (define (get-scale) (slider-value (third (ws-pl (unbox ws-box)))))
 
-(define song (rs-read "Sounds\\DRR.wav"))
-(define songlen (rs-frames song))
+
+(define song (rs-read "Sounds\\DRR.wav")) ;song import
+(define songlen (rs-frames song))         ;song length
 
 (signal-play 
  (network ()
@@ -34,7 +37,7 @@
           [a = (/ (+ r l) 2)]
           [d <= distortion (get-cutoff) (get-scale) a]))
 
-
+(define last-sec (make-vector 44101 0))
 (begin (big-bang INITIAL_WORLD
           [to-draw draw-world]
           [on-mouse mouse-handler]
