@@ -38,9 +38,8 @@
 (struct slider rect (value) #:prefab)
 
 ;; a button is (button posn number number function bool)
-;; - posn where the button is in the GUI
 ;; - function: the function that is run on the button being clicked (released)
-(struct button rect (function))
+(struct button rect (function) #:prefab)
 
 ;; list-of-pieces is one of:
 ;; -empty
@@ -57,8 +56,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; world constants: 
-(define XSIZE 400) ;; scene's max x value
-(define YSIZE 600) ;; scene's max y value
+(define BKG (bitmap/file "backgroundImage.jpeg"))
+(define XSIZE (image-width BKG)) ;; scene's max x value
+(define YSIZE (image-height BKG)) ;; scene's max y value
 
 ;; slider constants: 
 ;; 0 > sY-top > sY-bottom > YSIZE
@@ -66,15 +66,17 @@
 (define sY-bottom (* .9 YSIZE)) ;; slider's lowest pos
 (define sY-midpt (/ (+ sY-bottom sY-top) 2)) ;;midpoint of the sliders
 
-(define sH 20) ;; sliders' height
-(define sW 20) ;; sliders' width
+(define SLIDERIMAGE (bitmap/file "slider2.jpg"))
+
+(define sH (image-height SLIDERIMAGE)) ;; sliders' height
+(define sW (image-width SLIDERIMAGE)) ;; sliders' width
 
 ;; Initial world state setup:
 (define INITIAL_WORLD 
   (ws (list
-       (slider "one" (make-posn 100 (* .75 sY-bottom)) sH sW 0.25)
-       (slider "two" (make-posn 200 sY-top) sH sW 1)
-       (slider "three" (make-posn 300 sY-bottom) sH sW 0))
+       (slider "one" (make-posn 100 (* .75 sY-bottom)) sW sH 0.25)
+       (slider "two" (make-posn 200 sY-top) sW sH 1)
+       (slider "three" (make-posn 300 sY-bottom) sW sH 0))
       #f))
 
 ;; world state box is used for signals
