@@ -8,11 +8,11 @@
 
 ;; determines which slider is being selected
 ;; which-slider number list-of-pieces -> maybe-piece
-(define (which-slider posn pieces)
+(define (which-piece posn pieces)
   (cond [(empty? pieces) false]
         [else (cond 
                 [(in-rect? posn (first pieces)) (first pieces)]
-                [else (which-slider posn (rest pieces))])]))
+                [else (which-piece posn (rest pieces))])]))
 
 ;; mouse-handler handles when: 
 ;; -a slider is dragged
@@ -21,12 +21,13 @@
   (cond 
     ;; when the mouse clicks
     [(string=? mouse "button-down")
-     (struct-copy ws w [focus (which-slider (make-posn x y) (ws-pl w))])]
+     (struct-copy ws w [focus (which-piece (make-posn x y) (ws-pl w))])]
     ;; deselects the piece
     [(string=? mouse "button-up")
-     (struct-copy ws w [focus #f])]
+     (cond [(button? (ws-focus w)) (button-fucntion (ws-focus w) w)]
+           [else (struct-copy ws w [focus #f])])]
     ;; dragging updates the values of the slider
-    [(and (string=? mouse "drag") (not (false? (ws-focus w))))
+    [(and (string=? mouse "drag") (not (false? (ws-focus w))) (slider? (ws-focus w)))
      (local [(define updated-s (update-slider (ws-focus w) y))]
        (struct-copy ws w 
                     [pl (push-piece (ws-pl w) updated-s)]

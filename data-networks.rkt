@@ -37,6 +37,11 @@
 ;;         (remember y coord is inverted)
 (struct slider rect (value) #:prefab)
 
+;; a button is (button posn number number function bool)
+;; - posn where the button is in the GUI
+;; - function: the function that is run on the button being clicked (released)
+(struct button rect (function))
+
 ;; list-of-pieces is one of:
 ;; -empty
 ;; -(cons piece list-of-pieces)
