@@ -24,7 +24,7 @@
      (struct-copy ws w [focus (which-piece (make-posn x y) (ws-pl w))])]
     ;; deselects the piece
     [(string=? mouse "button-up")
-     (cond [(button? (ws-focus w)) (button-fucntion (ws-focus w) w)]
+     (cond [(button? (ws-focus w)) (button-function (ws-focus w) w)]
            [else (struct-copy ws w [focus #f])])]
     ;; dragging updates the values of the slider
     [(and (string=? mouse "drag") (not (false? (ws-focus w))) (slider? (ws-focus w)))
