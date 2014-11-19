@@ -11,7 +11,7 @@
 (define Team "awesome!")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; a piece is (piece posn)
 ;; -pos: a posn structure 
@@ -131,4 +131,12 @@
 
 ;(test)
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Button Constants
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define playButton
+  (button (make-posn (posn-x (piece-pos (first (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95)) 20 20 add1 #f));add1 is there because I didn't know what to 
+(define resetButton 
+  (button (make-posn (posn-x (piece-pos (second (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95)) 20 20 add1 #f))
+(define rectButton 
+  (button (make-posn (posn-x (piece-pos (third (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95)) 20 20 add1 #f))
