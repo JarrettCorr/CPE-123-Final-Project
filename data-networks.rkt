@@ -2,6 +2,7 @@
 (require lang/posn
          rsound
          2htdp/image
+         2htdp/universe
          test-engine/racket-tests)
 (provide struct
          struct-copy)
@@ -11,7 +12,7 @@
 (define Team "awesome!")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; a piece is (piece posn)
 ;; -pos: a posn structure 
@@ -27,9 +28,15 @@
 ;; -r: radius of the circle
 (struct circ piece (r) #:prefab)
 
-;; an sprite is (sprite posn image)
-;; -image: a picture of some kind (ex (file "aaa.png"))
-(struct sprite piece (image) #:prefab)
+;; image: a picture of some kind (ex (file "aaa.png"))
+;; list-of-images is one of: 
+;; -empty
+;; -(cons image list-of-images)
+
+;; an sprite is (sprite posn list-of-images number)
+;; -images: list of frames to animate the sprite
+;; -frame: which image to get from images
+(struct sprite piece (images frame) #:prefab)
 
 ;; a slider is (slider posn number number number)
 ;; -value: number from 0.0 to 1.0 that represents the
@@ -37,18 +44,23 @@
 ;;         (remember y coord is inverted)
 (struct slider rect (value) #:prefab)
 
-;; a button is (button posn number number function bool)
+;; a button is (button posn number number procedure bool)
 ;; - function: the function that is run on the button being clicked (released)
+;;             it is a procedure (lambda (world) ...) which takes in a world struct
 (struct button rect (function) #:prefab)
 
 ;; list-of-pieces is one of:
 ;; -empty
 ;; -(cons piece list-of-pieces)
 
+;; maybe-piece is one of:
+;; -false
+;; -piece
+
 ;; a world is (ws list-of-pieces maybe-piece)
-;; pl: a list-of-pieces contianed in the world
-;; focus: the piece currently being focused upon
-;;        -> either piece? or false (interp. as no piece being focused)
+;; -pl: a list-of-pieces contianed in the world
+;; -focus: where the piece currently being focused upon
+;;         and false is interpreted as no piece being focused
 (struct ws (pl focus) #:prefab)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,6 +71,8 @@
 (define BKG (bitmap/file "backgroundImage.jpeg"))
 (define XSIZE (image-width BKG)) ;; scene's max x value
 (define YSIZE (image-height BKG)) ;; scene's max y value
+(define song (rs-read "Sounds\\DRR.wav")) ;song import
+(define songlen (rs-frames song))         ;song length
 
 ;; slider constants: 
 ;; 0 > sY-top > sY-bottom > YSIZE
@@ -71,21 +85,17 @@
 (define sH (image-height SLIDERIMAGE)) ;; sliders' height
 (define sW (image-width SLIDERIMAGE)) ;; sliders' width
 
-;; Initial world state setup:
-(define INITIAL_WORLD 
-  (ws (list
-       (slider "one" (make-posn 100 (* .75 sY-bottom)) sW sH 0.25)
-       (slider "two" (make-posn 200 sY-top) sW sH 1)
-       (slider "three" (make-posn 300 sY-bottom) sW sH 0))
-      #f))
-
-;; world state box is used for signals
-(define ws-box (box INITIAL_WORLD))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helper Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; distance is the distance between two posn in pixels
+;; posn posn -> number
+(define (distance p1 p2)
+  (sqrt (+ (expt (- (posn-x p1) (posn-x p2)) 2)
+           (expt (- (posn-y p1) (posn-y p2)) 2))))
+
+(check-expect (distance (make-posn 0 4) (make-posn 0 6)) 2)
 
 ;; Piece helper functions
 
@@ -98,18 +108,18 @@
 (define (piece-same? p1 p2) 
   (string=? (piece-id p1) (piece-id p2)))
 
-;; distance is the distance between two posn in pixels
-;; posn posn -> number
-(define (distance p1 p2)
-  (sqrt (+ (expt (- (posn-x p1) (posn-x p2)) 2)
-           (expt (- (posn-y p1) (posn-y p2)) 2))))
-
-(check-expect (distance (make-posn 0 4) (make-posn 0 6)) 2)
+;; push-piece replaces an updated version of a piece back into the list
+;; list-of-pieces piece -> list-of-pieces
+(define (push-piece pieces p)
+  (map (lambda (i) 
+         (cond [(piece-same? i p) p]
+               [else i]))
+       pieces))  
 
 ;; Rectangle helper functions:
 
 ;; in-rect? checks if the position (make-posn x y) is in the rectangle
-;; integer integer rect -> boolean
+;; posn rect -> boolean
 (define (in-rect? posn rect) 
   (local [(define rX (get-x rect)) (define rW (/ (rect-w rect) 2))
           (define rY (get-y rect)) (define rH (/ (rect-h rect) 2))]                         
@@ -121,22 +131,106 @@
 ;; Circle helper functions:
 
 ; in-circ? checks if the position (make-posn x y) is in the circle
-; integer integer circ -> boolean
+; posn circ -> boolean
 (define (in-circ? posn circle)                        
   (< (distance posn (piece-pos circle)) (circ-r circle)))
 
 (check-expect (in-circ? (make-posn 3 4) (circ "one" (make-posn 2 2) 3)) #t)
 (check-expect (in-circ? (make-posn 10 10) (circ "one" (make-posn 2 2) 3)) #f)
 
+;; Button helper functions:
 
-;(test)
+;; produces a procedure that will take in a world and reset the slider
+;; in the world's piece list with matching id to the state of the 
+;; given slider
+;; slider -> procedure 
+(define (reset-slider s) 
+  (lambda (w) 
+    (struct-copy ws w
+                 [pl (push-piece (ws-pl w) s)])))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Button Constants
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define playButton
-  (button (make-posn (posn-x (piece-pos (first (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95)) 20 20 add1 #f));add1 is there because I didn't know what to 
-(define resetButton 
-  (button (make-posn (posn-x (piece-pos (second (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95)) 20 20 add1 #f))
-(define rectButton 
-  (button (make-posn (posn-x (piece-pos (third (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95)) 20 20 add1 #f))
+;; makes a button which resets a specific slider to the given slider's state
+;; number number slider -> button
+(define (reset-button x y s) 
+  (button (string-append "Reset-" (piece-id s)) 
+          (make-posn x y) 20 20 (reset-slider s)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Big-bang 2: Visualization of signals
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; for drawing the signals played
+(define saved-sig-size 1575) ; 1575 = frames in 1/28th of a sec
+;; saved-sig is a vector that holds saved-sig-size signals
+;; from 0 to (- to saved-sig-size 1) 
+;; and the position saved-sig-size in the vector holds the 
+;; most recent signal's pos in the vector
+(define saved-sig (make-vector (add1 saved-sig-size) 0))
+
+#|;;;;;;;;;;;;;;;;;|#
+#|Drawing Functions|#
+#|;;;;;;;;;;;;;;;;;|#
+
+;; signal-pic calls the recursive function that draws out all the signals in the
+;; saved-sig vector given the starting pos and how many frames to skip by each
+;; iteration. 
+;; If skip is 2 every other frame is drawn producing a half as wide image
+(define (signal-pic) 
+  (signal-pic-recur (vector-ref saved-sig saved-sig-size) 0 2))
+
+;; signal-pic-recur takes in a starting position for the saved-sig vector
+;; counts up by skip frames until it has almost wrapped back to its starting
+;; position traversing saved-sig-size worth of frames
+;; takes in: 
+;; start: a number from 0 to (- saved-sig-size 1)
+;; x: should always be zero
+;; skip: any positive integer
+;; -> image
+(define (signal-pic-recur start x skip)
+  (local [(define s (vector-ref saved-sig (modulo (- start x) saved-sig-size)))
+          (define bar (* (abs s) 100))]
+    (place-image 
+     (rectangle 1 bar "solid" "black")
+     (/ x skip)
+     (cond [(> s 0) (- 100 bar)]
+           [else 100])
+     (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 200)]
+           [else (signal-pic-recur start (+ x skip) skip)]))))
+
+(define (draw-signals w)
+  (signal-pic))
+
+;; function that creates a big-bang to visualize signals
+(define (signal-view) 
+   (big-bang #t
+            [on-tick (lambda (w) w)]            
+            [to-draw draw-signals]
+            [name "Signal View"]))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Initial Setup
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Default Sliders:
+
+(define SPEED_SLIDER 
+  (slider "Speedcontrol" (make-posn 100 (* .75 sY-bottom)) sW sH 0.25))
+(define DISTORT_SLIDER-CUT 
+  (slider "Distortion Cut-off" (make-posn 200 sY-top) sW sH 1))
+(define DISTORT_SLIDER-SCALE 
+  (slider "Distortion Feather" (make-posn 300 sY-bottom) sW sH 0))
+
+(define INITIAL_WORLD 
+  (ws (list
+       SPEED_SLIDER
+       DISTORT_SLIDER-CUT 
+       DISTORT_SLIDER-SCALE
+       (reset-button (get-x SPEED_SLIDER) (* .95 YSIZE) SPEED_SLIDER)
+       (button "See Signals" (make-posn 50 50) 20 20 
+               (lambda (w) (begin (thread signal-view) w)))
+       )
+      #f))
+
+;; world state box is used for signals
+(define ws-box (box INITIAL_WORLD))

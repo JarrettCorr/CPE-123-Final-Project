@@ -6,33 +6,43 @@
 (require (file "data-networks.rkt"))
 (provide mouse-handler)
 
-;; determines which slider is being selected
-;; which-slider number list-of-pieces -> maybe-piece
-(define (which-piece posn pieces)
-  (cond [(empty? pieces) false]
-        [else (cond 
-                [(in-rect? posn (first pieces)) (first pieces)]
-                [else (which-piece posn (rest pieces))])]))
-
 ;; mouse-handler handles when: 
 ;; -a slider is dragged
+;; -a button is pressed
 ;; world number number mouse-event -> world
 (define (mouse-handler w x y mouse)
-  (cond 
-    ;; when the mouse clicks
+  (local [(define fs (ws-focus w))]
+    (cond 
+    ;; Mouse-click determines if a piece has been clicked upon and 
+    ;; updates the world's focus field to that piece
     [(string=? mouse "button-down")
      (struct-copy ws w [focus (which-piece (make-posn x y) (ws-pl w))])]
-    ;; deselects the piece
+    ;; Mouse-down:
+    ;; button? - run the button's function to alter the world
+    ;; else    - returns the world with no focus (focus = #f)
     [(string=? mouse "button-up")
-     (cond [(button? (ws-focus w)) (button-function (ws-focus w) w)]
+     (cond [(button? fs) ((button-function fs) w)]
            [else (struct-copy ws w [focus #f])])]
-    ;; dragging updates the values of the slider
-    [(and (string=? mouse "drag") (not (false? (ws-focus w))) (slider? (ws-focus w)))
-     (local [(define updated-s (update-slider (ws-focus w) y))]
+    ;; Dragging:
+    ;; slider? - updates the slider's value and position in the world
+    ;; else    - does nothing and returns the world
+    [(and (string=? mouse "drag") (slider? fs))
+     (local [(define updated-s (update-slider fs y))]
        (struct-copy ws w 
                     [pl (push-piece (ws-pl w) updated-s)]
                     [focus updated-s]))]
-    [else w]))
+    [else w])))
+
+;; determines which piece the mouse is on
+;; posn list-of-pieces -> maybe-piece
+(define (which-piece posn pieces)   
+  (cond [(empty? pieces) #f]
+        [else 
+         (local [(define piece (first pieces))] 
+           (cond 
+             [(and (rect? piece) (in-rect? posn piece)) piece]
+             [(and (circ? piece) (in-circ? posn piece)) piece]
+             [else (which-piece posn (rest pieces))]))]))
          
 ;; update slider updates a given slider's
 ;; pos and value given the mouse y coord
@@ -44,14 +54,9 @@
                  [pos #:parent piece (make-posn (get-x s) new-y)]
                  [value (/ (- sY-bottom (- new-y sY-top) sY-top) (- sY-bottom sY-top))])))
 
-;; push-piece replaces an updated version of a piece back into the list
-;; list-of-pieces slider -> list-of-pieces
-(define (push-piece pieces p)
-  (map (lambda (i) 
-         (cond [(piece-same? i p) p]
-               [else i]))
-       pieces))         
+       
 
-;(test)
+
+
 
 

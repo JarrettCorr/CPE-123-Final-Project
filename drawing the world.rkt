@@ -5,7 +5,11 @@
          2htdp/image)
 (provide (all-defined-out))
 
-; these are constants for certain image attributes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Big-bang 1: Controls
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; these are constants for certain image attributes
 (define TEXTCOLOR "Azure")
 (define FONTSIZE 12)
 (define RAILCOLOR "Light Steel Blue")
@@ -15,7 +19,7 @@
 ;; drawn onto the main background (BKG) that defines the size of the scene
 (define STILLBKG  
    (local ; Creates functions to build the image for rail in which
-          ; the slider will go over as well as the position it needs
+          ; the slider will go over as well as the centered position it needs
      [(define (rail-image s) 
         (above 
          (overlay (text (piece-id s) FONTSIZE TEXTCOLOR)
@@ -57,19 +61,22 @@
 ;; piece -> image
 (define (draw-piece p) 
   (cond [(slider? p) SLIDERIMAGE]
+        [(button? p) 
+         (frame 
+          (rectangle (rect-w p) (rect-h p) "solid" "green"))]
         [else INVISIBLE_IMG]))
+
 ;; the draw-world function is called by big-bang and draws all
 ;; moving objects/changing objects over the still background (STILBKG)
 ;; and also boxes the world for signal-play
 ;; world -> image 
 ;;       -> ws-box 
-(define (draw-world world)
-  (begin (set-box! ws-box world)
-         (local [(define piece-list (ws-pl world))]
+(define (draw-world w)
+  (begin (set-box! ws-box w)
+         (local [(define piece-list (ws-pl w))]
            (place-images
             (map draw-piece piece-list)
             (map piece-pos piece-list)
             STILLBKG
    ))))
-;STILLBKG
-;(draw-world INITIAL_WORLD)
+
