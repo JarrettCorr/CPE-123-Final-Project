@@ -14,17 +14,17 @@
 ;; Data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; a piece is (piece posn)
+;; a piece is (piece string posn)
 ;; -pos: a posn structure 
 ;; -id: a unique string identifying it from other pieces
 (struct piece (id pos) #:prefab)
 
-;; a rect is (rect posn number number)
+;; a rect is (rect string posn number number)
 ;; -w: width of the rectangle
 ;; -h: height of the rectangle
 (struct rect piece (w h) #:prefab)
 
-;; a circle is (circ posn number)
+;; a circle is (circ string posn number)
 ;; -r: radius of the circle
 (struct circ piece (r) #:prefab)
 
@@ -33,18 +33,18 @@
 ;; -empty
 ;; -(cons image list-of-images)
 
-;; an sprite is (sprite posn list-of-images number)
+;; an sprite is (sprite string posn list-of-images number)
 ;; -images: list of frames to animate the sprite
 ;; -frame: which image to get from images
 (struct sprite piece (images frame) #:prefab)
 
-;; a slider is (slider posn number number number)
+;; a slider is (slider string posn number number number)
 ;; -value: number from 0.0 to 1.0 that represents the
 ;;         relative height, 1.0 = top 0.0 = bottom
 ;;         (remember y coord is inverted)
 (struct slider rect (value) #:prefab)
 
-;; a button is (button posn number number procedure bool)
+;; a button is (button string posn number number procedure)
 ;; - function: the function that is run on the button being clicked (released)
 ;;             it is a procedure (lambda (world) ...) which takes in a world struct
 (struct button rect (function) #:prefab)
@@ -189,11 +189,12 @@
 (define (signal-pic-recur start x skip)
   (local [(define s (vector-ref saved-sig (modulo (- start x) saved-sig-size)))
           (define bar (inexact->exact (round (* (abs s) 100))))]
-    (place-image 
-     (rectangle 1 bar "solid" (color bar 0 0))
+    (place-image/align 
+     (rectangle 1 (+ 1 bar) "solid" (color bar 0 0)); for fun a rects go from black to red as height increases
      (/ x skip)
      (cond [(> s 0) (- 100 bar)]
            [else 100])
+     "left" "top"
      (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 210)]
            [else (signal-pic-recur start (+ x skip) skip)]))))
 

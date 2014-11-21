@@ -71,3 +71,4 @@
                     (if (key=? k "r") INITIAL_WORLD
                           w))]) 
        (stop))
+(sleep 5)
