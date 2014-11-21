@@ -68,7 +68,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; world constants: 
-(define BKG (bitmap/file "backgroundImage.jpeg"))
+(define BKG (bitmap/file "backgroundImage Large.jpeg"))
 (define XSIZE (image-width BKG)) ;; scene's max x value
 (define YSIZE (image-height BKG)) ;; scene's max y value
 (define song (rs-read "Sounds\\DRR.wav")) ;song import
@@ -243,7 +243,7 @@
        ;; reset button for the delay
        (reset-button (get-x DELAY_SLIDER) (* .95 YSIZE) DELAY_SLIDER)
        ;; button that makes the "drawing-wave" world
-       (button "See Signals" (make-posn 50 50) 20 20 
+       (button "See Signals" (make-posn 50 50) 60 20 
                (lambda (w) (begin (thread signal-view) w)))
        )
       #f))
