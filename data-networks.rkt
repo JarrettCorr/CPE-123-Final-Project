@@ -10,7 +10,7 @@
 
 #|By:|#
 (define Team "awesome!")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,13 +215,13 @@
 ;; Default Sliders:
 
 (define SPEED_SLIDER 
-  (slider "Speedcontrol" (make-posn 100 (* .75 sY-bottom)) sW sH 0.25))
+  (slider "Speedcontrol" (make-posn 250 (* .75 sY-bottom)) sW sH 0.25))
 (define DISTORT_SLIDER-CUT 
-  (slider "Distortion Cut-off" (make-posn 200 sY-top) sW sH 1))
+  (slider "Distortion Cut-off" (make-posn 450 sY-top) sW sH 1))
 (define DISTORT_SLIDER-SCALE 
-  (slider "Distortion Feather" (make-posn 300 sY-bottom) sW sH 0))
+  (slider "Distortion Feather" (make-posn 650 sY-bottom) sW sH 0))
 (define DELAY_SLIDER 
-  (slider "Delay" (make-posn 400 sY-bottom) sW sH 0))
+  (slider "Delay" (make-posn 850 sY-bottom) sW sH 0))
 
 
 (define INITIAL_WORLD 
