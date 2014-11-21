@@ -188,13 +188,13 @@
 ;; -> image
 (define (signal-pic-recur start x skip)
   (local [(define s (vector-ref saved-sig (modulo (- start x) saved-sig-size)))
-          (define bar (* (abs s) 100))]
+          (define bar (inexact->exact (round (* (abs s) 100))))]
     (place-image 
-     (rectangle 1 bar "solid" "black")
+     (rectangle 1 bar "solid" (color bar 0 0))
      (/ x skip)
      (cond [(> s 0) (- 100 bar)]
            [else 100])
-     (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 200)]
+     (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 210)]
            [else (signal-pic-recur start (+ x skip) skip)]))))
 
 (define (draw-signals w)

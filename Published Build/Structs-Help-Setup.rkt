@@ -10,7 +10,7 @@
 
 #|By:|#
 (define Team "awesome!")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,7 +68,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; world constants: 
-(define BKG (bitmap/file "backgroundImage.jpeg"))
+(define BKG (bitmap/file "backgroundImage Large.jpeg"))
 (define XSIZE (image-width BKG)) ;; scene's max x value
 (define YSIZE (image-height BKG)) ;; scene's max y value
 (define song (rs-read "Sounds\\DRR.wav")) ;song import
@@ -188,13 +188,13 @@
 ;; -> image
 (define (signal-pic-recur start x skip)
   (local [(define s (vector-ref saved-sig (modulo (- start x) saved-sig-size)))
-          (define bar (* (abs s) 100))]
+          (define bar (inexact->exact (round (* (abs s) 100))))]
     (place-image 
-     (rectangle 1 bar "solid" "black")
+     (rectangle 1 bar "solid" (color bar 0 0))
      (/ x skip)
      (cond [(> s 0) (- 100 bar)]
            [else 100])
-     (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 200)]
+     (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 210)]
            [else (signal-pic-recur start (+ x skip) skip)]))))
 
 (define (draw-signals w)
@@ -215,19 +215,35 @@
 ;; Default Sliders:
 
 (define SPEED_SLIDER 
-  (slider "Speedcontrol" (make-posn 100 (* .75 sY-bottom)) sW sH 0.25))
+  (slider "Speedcontrol" (make-posn 250 (* .75 sY-bottom)) sW sH 0.25))
 (define DISTORT_SLIDER-CUT 
-  (slider "Distortion Cut-off" (make-posn 200 sY-top) sW sH 1))
+  (slider "Distortion Cut-off" (make-posn 450 sY-top) sW sH 1))
 (define DISTORT_SLIDER-SCALE 
-  (slider "Distortion Feather" (make-posn 300 sY-bottom) sW sH 0))
+  (slider "Distortion Feather" (make-posn 650 sY-bottom) sW sH 0))
+(define DELAY_SLIDER 
+  (slider "Delay" (make-posn 850 sY-bottom) sW sH 0))
+
 
 (define INITIAL_WORLD 
   (ws (list
+       ;; slider for playhead speed
        SPEED_SLIDER
+       ;; slider for distortion cutoff
        DISTORT_SLIDER-CUT 
+       ;; slider for the distortion form
        DISTORT_SLIDER-SCALE
+       ;; slider for the delay
+       DELAY_SLIDER
+       ;; reset button for playhead speed
        (reset-button (get-x SPEED_SLIDER) (* .95 YSIZE) SPEED_SLIDER)
-       (button "See Signals" (make-posn 50 50) 20 20 
+       ;; reset button for distortion cutoff
+       (reset-button (get-x DISTORT_SLIDER-CUT) (* .95 YSIZE) DISTORT_SLIDER-CUT)
+       ;; reset button for distortion form
+       (reset-button (get-x DISTORT_SLIDER-SCALE) (* .95 YSIZE) DISTORT_SLIDER-SCALE)
+       ;; reset button for the delay
+       (reset-button (get-x DELAY_SLIDER) (* .95 YSIZE) DELAY_SLIDER)
+       ;; button that makes the "drawing-wave" world
+       (button "See Signals" (make-posn 50 50) 60 20 
                (lambda (w) (begin (thread signal-view) w)))
        )
       #f))
