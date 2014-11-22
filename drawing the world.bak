@@ -1,76 +1,82 @@
 #lang racket
+(require "data-networks.rkt")
 (require lang/posn
          rsound
          2htdp/image)
-(provide struct
-         struct-copy)
 (provide (all-defined-out))
-;; Data
-
-;; a piece is (piece posn)
-;; -pos: a posn structure 
-(struct piece (pos) #:prefab)
-
-;; a rect is (rect posn number number)
-;; -w: width of the rectangle
-;; -h: height of the rectangle
-(struct rect piece (w h) #:prefab)
-
-;; an sprite is (sprite posn image)
-;; -image: a picture of some kind (ex (file "aaa.png"))
-(struct sprite piece (image) #:prefab)
-
-;; a slider is (slider posn number number number)
-;; -value: number from 0.0 to 1.0 that represents the
-;;;        relative height, 1.0 = top 0.0 = bottom
-(struct slider rect (value) #:prefab)
-
-;; list-of-pieces is one of:
-;; -empty
-;; -(cons piece list-of-pieces)
-
-;; a world is (ws list-of-pieces maybe-piece)
-;; pl: a list-of-pieces contianed in the world
-;; focus: the piece currently being focused upon
-;;        -> either piece? or false (interp. as no piece being focused)
-(struct ws (pl focus))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Constants
+;; Big-bang 1: Controls
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; world constants: 
-(define XSIZE 100) ;; scene's max x value
-(define YSIZE 100) ;; scene's max y value
+;; these are constants for certain image attributes
+(define TEXTCOLOR "Azure")
+(define FONTSIZE 12)
+(define RAILCOLOR "Light Steel Blue")
+(define INVISIBLE_IMG (rectangle 1 1 "solid" (color 255 255 255 0)))
 
-;; slider constants: 
-;; 0 > sY-top > sY-bottom > YSIZE
-(define sY-top 10)    ;; slider's highest pos 
-(define sY-bottom 90) ;; slider's lowest pos
+;; Constant that contains all non-moving, non-changing images
+;; drawn onto the main background (BKG) that defines the size of the scene
+(define STILLBKG  
+   (local ; Creates functions to build the image for rail in which
+          ; the slider will go over as well as the centered position it needs
+     [(define (rail-image s) 
+        (above 
+         (overlay (text (piece-id s) FONTSIZE TEXTCOLOR)
+                  (rectangle 10 (+ (* FONTSIZE 2) sH)
+                             "solid" (color 255 255 255 0)))
+         (rectangle 1 (- sY-bottom sY-top) "solid" RAILCOLOR)))
+      (define (rail-pos s) 
+        (make-posn (get-x s) (- sY-midpt (/ sH 2) FONTSIZE)))] 
+     ;places all rails for any sliders in the world
+     (place-images/align
+      ;making image lists and posn lists for place-image function for rails
+      (map (lambda (i) 
+             (cond [(slider? i) (rail-image i)]
+                   [else INVISIBLE_IMG]))
+           (ws-pl INITIAL_WORLD))
+      (map (lambda (i) 
+             (cond [(slider? i) (rail-pos i)]
+                   [else (make-posn XSIZE YSIZE)]))
+           (ws-pl INITIAL_WORLD))
+      "center" "center"
+   
+      ;places specific images into still background
+      (place-images/align
+       (list     
+        ;test buttons on the bottom
+        (rotate 270 (triangle 20 "solid" "Orange"))
+        (rectangle 20 20 "solid" "Orange")
+        (rectangle 20 20 "solid" "Orange"))
+       (list 
+        ;positions of the test buttons
+        (make-posn (posn-x (piece-pos (first (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95))
+        (make-posn (posn-x (piece-pos (second (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95))
+        (make-posn (posn-x (piece-pos (third (ws-pl INITIAL_WORLD)))) (* YSIZE 0.95)))
+       "center" "center"
+       BKG))))
 
-(define sH 0) ;; sliders' height
-(define sW 0) ;; sliders' width
+;; the draw-piece function handles how to draw all sub-types of a piece and returns the 
+;; necessary image
+;; piece -> image
+(define (draw-piece p) 
+  (cond [(slider? p) SLIDERIMAGE]
+        [(button? p) 
+         (frame 
+          (rectangle (rect-w p) (rect-h p) "solid" "green"))]
+        [else INVISIBLE_IMG]))
 
-;; Initial world state setup:
-(define INITIAL_WORLD 
-  (ws (list
-       (slider (make-posn 0 0) sH sW 0)
-       (slider (make-posn 0 0) sH sW 0)
-       (slider (make-posn 0 0) sH sW 0))
-      #f))
+;; the draw-world function is called by big-bang and draws all
+;; moving objects/changing objects over the still background (STILBKG)
+;; and also boxes the world for signal-play
+;; world -> image 
+;;       -> ws-box 
+(define (draw-world w)
+  (begin (set-box! ws-box w)
+         (local [(define piece-list (ws-pl w))]
+           (place-images
+            (map draw-piece piece-list)
+            (map piece-pos piece-list)
+            STILLBKG
+   ))))
 
-;; world state box is used for signals
-(define ws-box (box INITIAL_WORLD))
-(define BKG (empty-scene (* 8 XSIZE) (* 6 YSIZE)))
-
-(define INITIAL_POSITIONS
-        (list
-         (piece-pos (first (ws-pl INITIAL_WORLD)))
-        (piece-pos (second (ws-pl INITIAL_WORLD)))
-        (piece-pos (third (ws-pl INITIAL_WORLD)))))
-(define (sliderPositionList world)
-        (list
-         (piece-pos (first (ws-pl world)))
-        (piece-pos (second (ws-pl world)))
-        (piece-pos (third (ws-pl  world)))))
-  

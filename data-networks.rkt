@@ -220,13 +220,29 @@
   (slider "Distortion Cut-off" (make-posn 200 sY-top) sW sH 1))
 (define DISTORT_SLIDER-SCALE 
   (slider "Distortion Feather" (make-posn 300 sY-bottom) sW sH 0))
+(define DELAY_SLIDER 
+  (slider "Delay" (make-posn 400 sY-bottom) sW sH 0))
+
 
 (define INITIAL_WORLD 
   (ws (list
+       ;; slider for playhead speed
        SPEED_SLIDER
+       ;; slider for distortion cutoff
        DISTORT_SLIDER-CUT 
+       ;; slider for the distortion form
        DISTORT_SLIDER-SCALE
+       ;; slider for the delay
+       DELAY_SLIDER
+       ;; reset button for playhead speed
        (reset-button (get-x SPEED_SLIDER) (* .95 YSIZE) SPEED_SLIDER)
+       ;; reset button for distortion cutoff
+       (reset-button (get-x DISTORT_SLIDER-CUT) (* .95 YSIZE) DISTORT_SLIDER-CUT)
+       ;; reset button for distortion form
+       (reset-button (get-x DISTORT_SLIDER-SCALE) (* .95 YSIZE) DISTORT_SLIDER-SCALE)
+       ;; reset button for the delay
+       (reset-button (get-x DELAY_SLIDER) (* .95 YSIZE) DELAY_SLIDER)
+       ;; button that makes the "drawing-wave" world
        (button "See Signals" (make-posn 50 50) 20 20 
                (lambda (w) (begin (thread signal-view) w)))
        )
