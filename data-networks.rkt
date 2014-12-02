@@ -8,9 +8,11 @@
          struct-copy)
 (provide (all-defined-out))
 
+(define (both a b) b)
+
 #|By:|#
 (define Team "awesome!")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,8 +114,10 @@
 
 ;; add some pieces to a pieces-list
 ;; list-of-pieces list-of-pieces -> list-of-pieces
-(define (add-pieces pieces pieces-to-add)
-  (foldl cons pieces pieces-to-add))
+(define (add-pieces pieces-to-add pieces)
+  (foldr cons pieces-to-add pieces))
+
+(check-expect (add-pieces (list 1 2) (list 1 2 3)) (list 1 2 3 1 2))
 
 ;; push-piece replaces an updated version of a piece back into the list
 ;; list-of-pieces piece -> list-of-pieces
@@ -161,6 +165,32 @@
 (define (reset-button x y s) 
   (button (string-append "Reset-" (piece-id s)) 
           (make-posn x y) 20 20 (reset-slider s)))
+
+;; this function creates a drop-down menu
+;; world list-of-buttons -> world
+(define (draw-menu w new-menu)
+  (struct-copy ws w [pl (add-pieces new-menu (ws-pl w))]))
+
+;;(check-expect (draw-menu INITIAL_WORLD (list 1 2 3)) (list 3 2 1 (ws-pl INITIAL_WORLD)))
+  
+;; this function deletes a drop-down menu
+;; world list-of-buttons -> world
+(define (delete-menu w menu)
+  (struct-copy ws w [pl (remove* menu (ws-pl w))]))
+
+;; button height
+(define BUTTON-H 20)
+;; button width
+(define BUTTON-W 60)
+
+;; sound drop-down menu
+;; creates a list of buttons to choose what sound to play
+;; when you click on a button it returns a number and closes the drop-down menu
+(define sounds-list
+  (list (button "1" (make-posn 50 (+ 100 BUTTON-H)) BUTTON-W BUTTON-H (both 1 (lambda (w) (delete-menu w sounds-list))))
+        (button "2" (make-posn 50 (+ 100 (* 2 BUTTON-H))) BUTTON-W BUTTON-H (both 2 (lambda (w) (delete-menu w sounds-list))))
+        (button "3" (make-posn 50 (+ 100 (* 3 BUTTON-H))) BUTTON-W BUTTON-H (both 3 (lambda (w) (delete-menu w sounds-list))))
+        (button "4" (make-posn 50 (+ 100 (* 4 BUTTON-H))) BUTTON-W BUTTON-H (both 4 (lambda (w) (delete-menu w sounds-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Big-bang 2: Visualization of signals
@@ -260,8 +290,12 @@
        (button "See Signals" (make-posn 50 50) 60 20 
                (lambda (w) (begin (thread signal-view) w)))
        ;; the drop down menu button
-       #;(button "Choose your sound" (make-posn (- (image-width BKG) 50) 50) 60 20 draw-menu))
+       (button "Sound-Menu" (make-posn 50 100) 60 20 (lambda (w) (if (boolean? (member "1" (ws-pl w)))
+                                                                     (draw-menu w sounds-list)
+                                                                     (delete-menu w sounds-list)))))
       #f))
 
 ;; world state box is used for signals
 (define ws-box (box INITIAL_WORLD))
+
+;;(test)

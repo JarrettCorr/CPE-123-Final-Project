@@ -47,14 +47,39 @@
 (define (draw-button b) 
   (local [(define H (rect-h b)) (define W (rect-w b))
           (define font (round (/ H 1.5)))]
-    (cond [(string=? (substring (piece-id b) 0 6) "Reset-")         
-           (place-image/align 
-            (text "R" font "black")
-            (/ W 2) (/ H 2) "center" "center"
-            (rectangle W H "solid" "green"))]
-          [(string=? (piece-id b) "See Signals")
+    (cond [(string=? (piece-id b) "See Signals")
            (place-image/align 
             (text "Draw" font "black")
+            (/ W 2) (/ H 2) "center" "center"
+            (rectangle W H "solid" "green"))]
+          [(string=? (piece-id b) "Sound-Menu")
+           (place-image/align 
+            (text "Sounds" font "black")
+            (/ W 2) (/ H 2) "center" "center"
+            (rectangle W H "solid" "green"))]
+          [(string=? (piece-id b) "1")
+           (place-image/align 
+            (text "Chicken" font "black")
+            (/ W 2) (/ H 2) "center" "center"
+            (rectangle W H "solid" "green"))]
+          [(string=? (piece-id b) "2")
+           (place-image/align 
+            (text "Dog" font "black")
+            (/ W 2) (/ H 2) "center" "center"
+            (rectangle W H "solid" "green"))]
+          [(string=? (piece-id b) "3")
+           (place-image/align 
+            (text "Cat" font "black")
+            (/ W 2) (/ H 2) "center" "center"
+            (rectangle W H "solid" "green"))]
+          [(string=? (piece-id b) "4")
+           (place-image/align 
+            (text "Elephant" font "black")
+            (/ W 2) (/ H 2) "center" "center"
+            (rectangle W H "solid" "green"))]
+          [(string=? (substring (piece-id b) 0 6) "Reset-")         
+           (place-image/align 
+            (text "R" font "black")
             (/ W 2) (/ H 2) "center" "center"
             (rectangle W H "solid" "green"))]
           [else (rectangle W H "solid" "red")])))
