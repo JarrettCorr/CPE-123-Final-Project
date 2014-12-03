@@ -7,6 +7,7 @@
 (provide (all-defined-out))
 
 ; these are constants for certain image attributes
+(define buttonColor (color 54 113 203))
 (define TEXTCOLOR "Azure")
 (define FONTSIZE 12)
 (define RAILCOLOR "Light Steel Blue")
@@ -53,24 +54,24 @@
            (place-image/align 
             (text "Draw" font "black")
             (/ W 2) (/ H 2) "center" "center"
-            (rectangle W H "solid" "green"))]
+            (rectangle W H "solid" buttonColor))]
           [(string=? id "Sound-Menu")
            (place-image/align 
             (text "Sounds" font "black")
             (/ W 2) (/ H 2) "center" "center"
-            (rectangle W H "solid" "green"))]
+            (rectangle W H "solid" buttonColor))]
           [(and (>= (string-length id) 11) 
                 (string=? (substring id 0 11) "Sound-Menu-"))         
            (place-image/align 
             (text (substring id 11 12) font "black")
             (/ W 2) (/ H 2) "center" "center"
-            (rectangle W H "solid" "green"))]
+            (rectangle W H "solid" buttonColor))]
           [(and (>= (string-length id) 5) 
                 (string=? (substring id 0 6) "Reset-"))         
            (place-image/align 
             (text "R" font "black")
             (/ W 2) (/ H 2) "center" "center"
-            (rectangle W H "solid" "green"))]
+            (rectangle W H "solid" buttonColor))]
           [else (rectangle W H "solid" "red")])))
 
 ;; the draw-piece function handles how to draw all sub-types of a piece and returns the 
