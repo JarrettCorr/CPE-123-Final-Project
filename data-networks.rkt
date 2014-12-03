@@ -241,7 +241,7 @@
      (/ x skip)
      (cond [(> s 0) (- 100 bar)]
            [else 100])
-     "top" "left"
+     "left" "top" 
      (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 210)]
            [else (signal-pic-recur start (+ x skip) skip)]))))
 
