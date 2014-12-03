@@ -20,13 +20,13 @@
 ;; (these unbox functions are temporary as the pos of the slider must be known
 ;; searching for them will be added later.)
 ;; unboxes first slider value for speeed of playhead
-(define (get-speed) (max .5 (* 4 (slider-value (first (ws-pl (unbox ws-box)))))))
+(define (get-speed) (max .5 (* 4 (slider-value (first (filter slider? (ws-pl (unbox ws-box))))))))
 ;; unboxes second and third slider values for distortion control
-(define (get-cutoff) (slider-value (second (ws-pl (unbox ws-box)))))
-(define (get-scale) (slider-value (third (ws-pl (unbox ws-box)))))
+(define (get-cutoff) (slider-value (second (filter slider? (ws-pl (unbox ws-box))))))
+(define (get-scale) (slider-value (third (filter slider? (ws-pl (unbox ws-box))))))
 ;; unboxes fourth slider to get a delay in frames 0 to 1575 (1/28th of a sec)
 (define (get-delay) 
-  (inexact->exact (round (* 1575 (slider-value (fourth (ws-pl (unbox ws-box))))))))
+  (inexact->exact (round (* 1575 (slider-value (fourth (filter slider? (ws-pl (unbox ws-box)))))))))
 ;; save-signal takes in a signal value and its pos in the saved-sig vector
 ;; the pos is also saved to know where the most recent signal is when drawing
 ;; number number -> void?
@@ -46,14 +46,14 @@
           [frame = (inexact->exact (round f))]
           
           ;; merge left and right signals
-          [r = (rs-ith/right song frame)]
-          [l = (rs-ith/left song frame)]
+          [r = (rs-ith/right drrr frame)]
+          [l = (rs-ith/left drrr frame)]
           [s1 = (/ (+ r l) 2)]
           
           ;; merge left and right of delay signals
           [d-frame = (modulo (+ frame (get-delay)) songlen)]
-          [r = (rs-ith/right song d-frame)]
-          [l = (rs-ith/left song d-frame)]
+          [r = (rs-ith/right drrr d-frame)]
+          [l = (rs-ith/left drrr d-frame)]
           [s2 = (/ (+ r l) 2)]
           
           [s = (/ (+ s1 s2) 2)]

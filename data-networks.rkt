@@ -16,7 +16,11 @@
 ;; Data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+;; a song is (song string rsound integer)
+;; -name: a string that is the song name
+;; -sound: the rsound that is the song
+;; -length: the songs length in frames
+(struct song (name rsound length) #:prefab)
 
 ;; a piece is (piece posn)
 ;; -pos: a posn structure 
@@ -51,6 +55,7 @@
 ;; a button is (button posn number number procedure bool)
 ;; - function: the function that is run on the button being clicked (released)
 ;;             it is a procedure (lambda (world) ...) which takes in a world struct
+;;             and returns a world struct
 (struct button rect (function) #:prefab)
 
 ;; list-of-pieces is one of:
@@ -61,11 +66,13 @@
 ;; -false
 ;; -piece
 
-;; a world is (ws list-of-pieces maybe-piece)
+;; a world is (ws list-of-pieces maybe-piece integer)
 ;; -pl: a list-of-pieces contianed in the world
 ;; -focus: where the piece currently being focused upon
 ;;         and false is interpreted as no piece being focused
-(struct ws (pl focus) #:prefab)
+;; -music: the pos in the SONGS list which dictates which song to play
+;;         an integer from 0 to (- (length SONGS) 1)
+(struct ws (pl focus music) #:prefab)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Constants
@@ -75,8 +82,20 @@
 (define BKG (bitmap/file "backgroundImage Large.jpeg"))
 (define XSIZE (image-width BKG)) ;; scene's max x value
 (define YSIZE (image-height BKG)) ;; scene's max y value
-(define song (rs-read "Sounds\\DRR.wav")) ;song import
-(define songlen (rs-frames song))         ;song length
+(define SECOND 44100)
+
+;; Grabs the song paths in the directory \\Sounds\\
+(define SONG_PATHS (directory-list "Sounds\\"))
+
+(define SONGS ;; translates the paths from SONG_PATHS into a list of song structs
+  (map        ;; which each contain the songs name, the rsound to play the song,
+   (lambda (p);; and its length in frames
+     (local [(define s (rs-read (build-path (current-directory) "Sounds" p)))]
+       (song (path->string p) s (rs-frames s))))
+  SONG_PATHS))
+
+(define drrr (rs-read "Sounds\\DRR.wav")) ;song import
+(define songlen (rs-frames drrr))         ;song length
 
 ;; slider constants: 
 ;; 0 > sY-top > sY-bottom > YSIZE
@@ -87,11 +106,20 @@
 (define SLIDERIMAGE (bitmap/file "slider2.jpg"))
 
 (define sH (image-height SLIDERIMAGE)) ;; sliders' height
-(define sW (image-width SLIDERIMAGE)) ;; sliders' width
+(define sW (image-width SLIDERIMAGE))  ;; sliders' width
+
+;; Button constants: 
+(define menuBH 40) ;; a menu button's height
+(define menuBW 80) ;; a menu button's width
+;; the sound selection menu drop down button's pos
+(define sound-menuPOS (make-posn 50 100)) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helper Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; a call to s will return the frames in x seconds
+(define (s x) (round (* SECOND x)))
 
 ;; distance is the distance between two posn in pixels
 ;; posn posn -> number
@@ -112,12 +140,19 @@
 (define (piece-same? p1 p2) 
   (string=? (piece-id p1) (piece-id p2)))
 
-;; add some pieces to a pieces-list
+;; adds some pieces to a list-of-pieces
 ;; list-of-pieces list-of-pieces -> list-of-pieces
 (define (add-pieces pieces-to-add pieces)
   (foldr cons pieces-to-add pieces))
 
 (check-expect (add-pieces (list 1 2) (list 1 2 3)) (list 1 2 3 1 2))
+
+;; removes some pieces from a list-of-pieces
+;; list-of-pieces list-of-pieces -> list-of-pieces
+(define (remove-pieces pieces-to-remove pieces)
+  (remove* pieces-to-remove pieces))
+
+(check-expect (add-pieces (list 1 2) (list 1 2 3)) (list 3))
 
 ;; push-piece replaces an updated version of a piece back into the list
 ;; list-of-pieces piece -> list-of-pieces
@@ -166,31 +201,6 @@
   (button (string-append "Reset-" (piece-id s)) 
           (make-posn x y) 20 20 (reset-slider s)))
 
-;; this function creates a drop-down menu
-;; world list-of-buttons -> world
-(define (draw-menu w new-menu)
-  (struct-copy ws w [pl (add-pieces new-menu (ws-pl w))]))
-
-;;(check-expect (draw-menu INITIAL_WORLD (list 1 2 3)) (list 3 2 1 (ws-pl INITIAL_WORLD)))
-  
-;; this function deletes a drop-down menu
-;; world list-of-buttons -> world
-(define (delete-menu w menu)
-  (struct-copy ws w [pl (remove* menu (ws-pl w))]))
-
-;; button height
-(define BUTTON-H 20)
-;; button width
-(define BUTTON-W 60)
-
-;; sound drop-down menu
-;; creates a list of buttons to choose what sound to play
-;; when you click on a button it returns a number and closes the drop-down menu
-(define sounds-list
-  (list (button "1" (make-posn 50 (+ 100 BUTTON-H)) BUTTON-W BUTTON-H (both 1 (lambda (w) (delete-menu w sounds-list))))
-        (button "2" (make-posn 50 (+ 100 (* 2 BUTTON-H))) BUTTON-W BUTTON-H (both 2 (lambda (w) (delete-menu w sounds-list))))
-        (button "3" (make-posn 50 (+ 100 (* 3 BUTTON-H))) BUTTON-W BUTTON-H (both 3 (lambda (w) (delete-menu w sounds-list))))
-        (button "4" (make-posn 50 (+ 100 (* 4 BUTTON-H))) BUTTON-W BUTTON-H (both 4 (lambda (w) (delete-menu w sounds-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Big-bang 2: Visualization of signals
@@ -226,23 +236,17 @@
 (define (signal-pic-recur start x skip)
   (local [(define s (vector-ref saved-sig (modulo (- start x) saved-sig-size)))
           (define bar (inexact->exact (round (* (abs s) 100))))]
-    (place-image 
+    (place-image/align 
      (rectangle 1 bar "solid" (color bar 0 0))
      (/ x skip)
      (cond [(> s 0) (- 100 bar)]
            [else 100])
+     "top" "left"
      (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 210)]
            [else (signal-pic-recur start (+ x skip) skip)]))))
 
 (define (draw-signals w)
   (signal-pic))
-
-;; add a button to the world list
-;; pieces-list piece -> list-of-pieces
-;(define (add-piece pieces piece)
-;  (lambda (w) 
-;    (struct-copy ws w
-;                 [pl (add-piece (ws-pl w) piece)]))))
 
 ;; function that creates a big-bang to visualize signals
 (define (signal-view) 
@@ -267,6 +271,26 @@
 (define DELAY_SLIDER 
   (slider "Delay" (make-posn 850 sY-bottom) sW sH 0))
 
+;; Drop down sound selection menu
+
+;; creates a list of buttons to choose what sound to play
+;; when you click on a button it removes all sound selection buttons and changes
+;; the world's music field to the selected sound
+(define SOUND_SELECT_MENU ;; list-of pieces
+  (map 
+   (lambda (i) 
+     (button (string-append "Sound-Menu-" (number->string i))
+             (local [(define column (floor (/ (* i menuBH) (/ YSIZE 2))))
+                     (define row (modulo i (floor (/ (/ YSIZE 2) menuBH))))]
+             (make-posn (+ (posn-x sound-menuPOS) (* column menuBW))
+                        (+ (posn-y sound-menuPOS) menuBH (* row menuBH))))
+              menuBW menuBH
+             (lambda (w) 
+               (struct-copy ws w 
+                            [pl (remove-pieces SOUND_SELECT_MENU (ws-pl w))]
+                            [music i]))))
+   (build-list (length SONGS) values)))
+
 
 (define INITIAL_WORLD 
   (ws (list
@@ -290,10 +314,14 @@
        (button "See Signals" (make-posn 50 50) 60 20 
                (lambda (w) (begin (thread signal-view) w)))
        ;; the drop down menu button
-       (button "Sound-Menu" (make-posn 50 100) 60 20 (lambda (w) (if (boolean? (member "1" (ws-pl w)))
-                                                                     (draw-menu w sounds-list)
-                                                                     (delete-menu w sounds-list)))))
-      #f))
+       (button "Sound-Menu" (make-posn 50 100) menuBW menuBH 
+               (lambda (w) 
+                 (struct-copy ws w
+                              [pl (if (ormap (lambda (p) (eq? p (first SOUND_SELECT_MENU)))
+                                             (ws-pl w))                                      
+                                      (remove-pieces SOUND_SELECT_MENU (ws-pl w))
+                                      (add-pieces SOUND_SELECT_MENU (ws-pl w)))]))))
+      #f 0))
 
 ;; world state box is used for signals
 (define ws-box (box INITIAL_WORLD))
