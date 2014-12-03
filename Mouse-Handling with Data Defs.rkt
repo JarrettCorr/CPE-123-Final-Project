@@ -54,9 +54,4 @@
                  [pos #:parent piece (make-posn (get-x s) new-y)]
                  [value (/ (- sY-bottom (- new-y sY-top) sY-top) (- sY-bottom sY-top))])))
 
-       
-
-
-
-
-
+;;(test)

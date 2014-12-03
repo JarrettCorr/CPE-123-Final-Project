@@ -2,7 +2,8 @@
 (require (file "data-networks.rkt"))
 (require lang/posn
          rsound
-         2htdp/image)
+         2htdp/image
+         test-engine/racket-tests)
 (provide (all-defined-out))
 
 ; these are constants for certain image attributes
@@ -94,3 +95,5 @@
    ))))
 ;STILLBKG
 ;(draw-world INITIAL_WORLD)
+
+;;(test)

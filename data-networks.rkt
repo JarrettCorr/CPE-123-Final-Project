@@ -121,6 +121,8 @@
 ;; a call to s will return the frames in x seconds
 (define (s x) (round (* SECOND x)))
 
+(check-expect (s 2) 88200)
+
 ;; distance is the distance between two posn in pixels
 ;; posn posn -> number
 (define (distance p1 p2)
@@ -140,6 +142,9 @@
 (define (piece-same? p1 p2) 
   (string=? (piece-id p1) (piece-id p2)))
 
+(check-expect (piece-same? (piece "1" (make-posn 1 2)) (piece "1" (make-posn 2 5)))  #t)
+(check-expect (piece-same? (piece "1" (make-posn 1 2)) (piece "2" (make-posn 2 5)))  #f)
+
 ;; adds some pieces to a list-of-pieces
 ;; list-of-pieces list-of-pieces -> list-of-pieces
 (define (add-pieces pieces-to-add pieces)
@@ -152,7 +157,9 @@
 (define (remove-pieces pieces-to-remove pieces)
   (remove* pieces-to-remove pieces))
 
-(check-expect (add-pieces (list 1 2) (list 1 2 3)) (list 3))
+(check-expect (remove-pieces (list (piece "1" (make-posn 1 2))) 
+                             (list (piece "1" (make-posn 1 2)) (piece "2" (make-posn 2 5))))
+                             (list (piece "2" (make-posn 2 5))))
 
 ;; push-piece replaces an updated version of a piece back into the list
 ;; list-of-pieces piece -> list-of-pieces
@@ -160,7 +167,11 @@
   (map (lambda (i) 
          (cond [(piece-same? i p) p]
                [else i]))
-       pieces))  
+       pieces))
+
+(check-expect (push-piece (list (piece "1" (make-posn 1 2)) (piece "2" (make-posn 2 5)))
+                          (piece "2" (make-posn 5 7)))
+              (list (piece "1" (make-posn 1 2)) (piece "2" (make-posn 5 7))))
 
 ;; Rectangle helper functions:
 
@@ -311,7 +322,7 @@
        ;; reset button for the delay
        (reset-button (get-x DELAY_SLIDER) (* .95 YSIZE) DELAY_SLIDER)
        ;; button that makes the "drawing-wave" world
-       (button "See Signals" (make-posn 50 50) 60 20 
+       (button "See Signals" (make-posn 50 50) 60 20
                (lambda (w) (begin (thread signal-view) w)))
        ;; the drop down menu button
        (button "Sound-Menu" (make-posn 50 100) menuBW menuBH 
