@@ -11,6 +11,8 @@
 ;; unboxes the world's music field to get the current song and song length chosen
 (define (get-song) (song-rsound (list-ref SONGS (ws-music (unbox ws-box)))))
 (define (get-songlen) (song-length (list-ref SONGS (ws-music (unbox ws-box)))))
+;; unboxes the flang? field of the world
+(define (get-flang?) (ws-flang? (unbox ws-box)))
 ;; unboxes first slider value for speeed of playhead
 (define (get-speed) (max .5 (* 4 (slider-value 
                                   (first (filter slider? (ws-pl (unbox ws-box))))))))
@@ -23,6 +25,10 @@
 (define (get-delay) 
   (inexact->exact (round (* 4410 (get-speed) (slider-value 
                                   (fourth (filter slider? (ws-pl (unbox ws-box)))))))))
+;; unboxes fifth slider to get the flang frequency ranging from 0.1 to 5
+(define (get-flang-freq) 
+  (max .1 (* 5 (slider-value 
+                (fifth (filter slider? (ws-pl (unbox ws-box))))))))
 
 ;; playSong returns a network that grabs the signal for the current song
 ;; at the frame it is given. It combines the left and right channels.
@@ -70,11 +76,14 @@
           [s1 <= playSong frame]
           
           ;; sin wave used for oscilating around playhead
-          [sin <= sine-wave 5]
+          [sin <= sine-wave (get-flang-freq)]
+          
+          ;; determines if a delay or flang will be used
+          [flang? = (if (get-flang?) sin 1)]
           
           ;; create delayed signal at d-frame
           [d-frame = (modulo (+ frame 
-                                (inexact->exact (round (* sin (get-delay))))) 
+                                (inexact->exact (round (* flang? (get-delay))))) 
                              (get-songlen))]
           [s2 <= playSong d-frame]
           

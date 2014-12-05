@@ -41,11 +41,6 @@
 ;; -empty
 ;; -(cons image list-of-images)
 
-;; an sprite is (sprite posn list-of-images number)
-;; -images: list of frames to animate the sprite
-;; -frame: which image to get from images
-(struct sprite piece (images frame) #:prefab)
-
 ;; a slider is (slider posn number number number)
 ;; -value: number from 0.0 to 1.0 that represents the
 ;;         relative height, 1.0 = top 0.0 = bottom
@@ -66,13 +61,14 @@
 ;; -false
 ;; -piece
 
-;; a world is (ws list-of-pieces maybe-piece integer)
+;; a world is (ws list-of-pieces maybe-piece integer boolean)
 ;; -pl: a list-of-pieces contianed in the world
 ;; -focus: where the piece currently being focused upon
 ;;         and false is interpreted as no piece being focused
 ;; -music: the pos in the SONGS list which dictates which song to play
 ;;         an integer from 0 to (- (length SONGS) 1)
-(struct ws (pl focus music) #:prefab)
+;; -flang?: determines if the music wants to have a flang added to it
+(struct ws (pl focus music flang?) #:prefab)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Constants
@@ -83,6 +79,8 @@
 (define XSIZE (image-width BKG)) ;; scene's max x value
 (define YSIZE (image-height BKG)) ;; scene's max y value
 (define SECOND 44100)
+;; Our logo: 
+(define LOGO-PIC (bitmap/file "Awesome.png"))
 
 ;; Grabs the song paths in the directory \\Sounds\\
 (define SONG_PATHS (directory-list "Sounds\\"))
@@ -93,9 +91,6 @@
      (local [(define s (rs-read (build-path (current-directory) "Sounds" p)))]
        (song (path->string p) s (rs-frames s))))
   SONG_PATHS))
-
-(define drrr (rs-read "Sounds\\DRR.wav")) ;song import
-(define songlen (rs-frames drrr))         ;song length
 
 ;; slider constants: 
 ;; 0 > sY-top > sY-bottom > YSIZE
@@ -109,10 +104,10 @@
 (define sW (image-width SLIDERIMAGE))  ;; sliders' width
 
 ;; Button constants: 
-(define menuBH 40) ;; a menu button's height
+(define menuBH 20) ;; a menu button's height
 (define menuBW 80) ;; a menu button's width
 ;; the sound selection menu drop down button's pos
-(define sound-menuPOS (make-posn 50 100)) 
+(define sound-menuPOS (make-posn 50 150)) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helper Functions
@@ -274,13 +269,15 @@
 ;; Default Sliders:
 
 (define SPEED_SLIDER 
-  (slider "Speedcontrol" (make-posn 250 (* .75 sY-bottom)) sW sH 0.25))
+  (slider "Speedcontrol" (make-posn 200 (* .75 sY-bottom)) sW sH 0.25))
 (define DISTORT_SLIDER-CUT 
-  (slider "Distortion Cut-off" (make-posn 450 sY-top) sW sH 1))
+  (slider "Distortion Cut-off" (make-posn 375 sY-top) sW sH 1))
 (define DISTORT_SLIDER-SCALE 
-  (slider "Distortion Feather" (make-posn 650 sY-bottom) sW sH 0))
+  (slider "Distortion Feather" (make-posn 550 sY-bottom) sW sH 0))
 (define DELAY_SLIDER 
-  (slider "Delay" (make-posn 850 sY-bottom) sW sH 0))
+  (slider "Delay" (make-posn 725 sY-bottom) sW sH 0))
+(define FLANG_FREQ_SLIDER 
+  (slider "Flang Frequency" (make-posn 900 (* 4/5 sY-bottom)) sW sH 1))
 
 ;; Drop down sound selection menu
 
@@ -313,6 +310,8 @@
        DISTORT_SLIDER-SCALE
        ;; slider for the delay
        DELAY_SLIDER
+       ;; slider for flang frequency
+       FLANG_FREQ_SLIDER
        ;; reset button for playhead speed
        (reset-button (get-x SPEED_SLIDER) (* .95 YSIZE) SPEED_SLIDER)
        ;; reset button for distortion cutoff
@@ -321,18 +320,23 @@
        (reset-button (get-x DISTORT_SLIDER-SCALE) (* .95 YSIZE) DISTORT_SLIDER-SCALE)
        ;; reset button for the delay
        (reset-button (get-x DELAY_SLIDER) (* .95 YSIZE) DELAY_SLIDER)
+       ;; reset button for the flang freqency
+       (reset-button (get-x FLANG_FREQ_SLIDER) (* .95 YSIZE) FLANG_FREQ_SLIDER)
+       ;; button to toggle flanging of music
+       (button "Flang" (make-posn (get-x DELAY_SLIDER) (* .975 YSIZE)) 40 20 
+               (lambda (w) (struct-copy ws w [flang? (not (ws-flang? w))])))
        ;; button that makes the "drawing-wave" world
        (button "See Signals" (make-posn 50 50) 60 20
                (lambda (w) (begin (thread signal-view) w)))
        ;; the drop down menu button
-       (button "Sound-Menu" (make-posn 50 100) menuBW menuBH 
+       (button "Sound-Menu" sound-menuPOS menuBW menuBH 
                (lambda (w) 
                  (struct-copy ws w
                               [pl (if (ormap (lambda (p) (eq? p (first SOUND_SELECT_MENU)))
                                              (ws-pl w))                                      
                                       (remove-pieces SOUND_SELECT_MENU (ws-pl w))
                                       (add-pieces SOUND_SELECT_MENU (ws-pl w)))]))))
-      #f 0))
+      #f 0 #f))
 
 ;; world state box is used for signals
 (define ws-box (box INITIAL_WORLD))

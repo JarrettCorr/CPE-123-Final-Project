@@ -41,7 +41,7 @@
       "center" "center"
       
       ;places specific images into still background
-      BKG)))
+      (place-image/align LOGO-PIC 100 100 "center" "center" BKG))))
 
 ;; the draw-button function handles providing different images for buttons with different
 ;; id fields
@@ -50,28 +50,43 @@
   (local [(define H (rect-h b)) (define W (rect-w b))
           (define font (round (/ H 1.5)))
           (define id (piece-id b))]
+    
     (cond [(string=? id "See Signals")
            (place-image/align 
             (text "Draw" font "black")
             (/ W 2) (/ H 2) "center" "center"
             (rectangle W H "solid" buttonColor))]
+          
           [(string=? id "Sound-Menu")
            (place-image/align 
             (text "Sounds" font "black")
             (/ W 2) (/ H 2) "center" "center"
             (rectangle W H "solid" buttonColor))]
+          
           [(and (>= (string-length id) 11) 
                 (string=? (substring id 0 11) "Sound-Menu-"))         
            (place-image/align 
-            (text (substring id 11 12) font "black")
+            (text 
+             (song-name 
+              (list-ref SONGS 
+                        (string->number (substring id 11 12)))) 
+             font "black")
             (/ W 2) (/ H 2) "center" "center"
             (rectangle W H "solid" buttonColor))]
-          [(and (>= (string-length id) 5) 
+          
+          [(and (>= (string-length id) 6) 
                 (string=? (substring id 0 6) "Reset-"))         
            (place-image/align 
             (text "R" font "black")
             (/ W 2) (/ H 2) "center" "center"
             (rectangle W H "solid" buttonColor))]
+          
+          [(string=? id "Flang")
+           (place-image/align 
+            (text id font "black")
+            (/ W 2) (/ H 2) "center" "center"
+            (rectangle W H "solid" buttonColor))]
+          
           [else (rectangle W H "solid" "red")])))
 
 ;; the draw-piece function handles how to draw all sub-types of a piece and returns the 
@@ -79,7 +94,7 @@
 ;; piece -> image
 (define (draw-piece p) 
   (cond [(slider? p) SLIDERIMAGE]
-        [(button? p) (draw-button p)]
+        [(button? p) (frame (draw-button p))]
         [else INVISIBLE_IMG]))
 ;; the draw-world function is called by big-bang and draws all
 ;; moving objects/changing objects over the still background (STILBKG)
@@ -94,7 +109,7 @@
             (map piece-pos piece-list)
             STILLBKG
    ))))
-;STILLBKG
-;(draw-world INITIAL_WORLD)
 
+;STILLBKG 
+;(draw-world INITIAL_WORLD)
 ;;(test)
