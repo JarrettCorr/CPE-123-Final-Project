@@ -29,6 +29,7 @@ Flange Button: toggles if a flange is created or just a delayed version of the s
 
 R buttons: are reset buttons for the slider they are under.
 
-sound button: provides a drop down menu to select any .wav file in the Sounds directory. (if a file that doesn't have the extension .wav is placed in the Sounds directory, the program will break)
+sound button: provides a drop down menu to select any .wav file in the Sounds directory.
+	      (if a file that doesn't have the extension .wav is placed in the Sounds directory, the program will break)
 
 draw button: opens a second window showing the visualization of the signals being created. Shows the prior 1/28th of a second worth of signals
