@@ -8,25 +8,46 @@
          (file "Mouse-Handling with Data Defs.rkt")
          (file "drawing the world.rkt"))
 
+;; unboxes the world's music field to get the current song and song length chosen
+(define (get-song) (song-rsound (list-ref SONGS (ws-music (unbox ws-box)))))
+(define (get-songlen) (song-length (list-ref SONGS (ws-music (unbox ws-box)))))
+;; unboxes first slider value for speeed of playhead
+(define (get-speed) (max .5 (* 4 (slider-value 
+                                  (first (filter slider? (ws-pl (unbox ws-box))))))))
+;; unboxes second and third slider values for distortion control
+(define (get-cutoff) (slider-value 
+                      (second (filter slider? (ws-pl (unbox ws-box))))))
+(define (get-scale) (slider-value 
+                     (third (filter slider? (ws-pl (unbox ws-box))))))
+;; unboxes fourth slider to get a delay in frames 0 to 4410 (1/10th of a sec)
+(define (get-delay) 
+  (inexact->exact (round (* 4410 (get-speed) (slider-value 
+                                  (fourth (filter slider? (ws-pl (unbox ws-box)))))))))
+
+;; playSong returns a network that grabs the signal for the current song
+;; at the frame it is given. It combines the left and right channels.
+(define playSong 
+  (network (frame)
+           [r = (rs-ith/right (get-song) frame)]
+           [l = (rs-ith/left (get-song) frame)]
+           [out = (/ (+ r l) 2)]))
+
+;; a version of loop-ctr/variable that allows the song length 
+;; to change
+(define loop-ctr/variable2 
+  (network (songlen skip)
+           [f = (+ (prev out 0) skip)]
+           [out = (if (< f songlen) f 0)]))
+
 ;; distortion returns a network that scales amplitudes
 ;; above the cut-off by the above-scale value
-;; number number -> network
+;; number number -> network 
 (define distortion
   (network (cut-off above-scale i) 
     [out = (cond [(> i cut-off) (+ cut-off (* (- i cut-off) above-scale))]
-          [(< i (* -1 cut-off)) (- cut-off (* (+ i cut-off) above-scale))]
-          [else i])]))
+                 [(< i (* -1 cut-off)) (- cut-off (* (+ i cut-off) above-scale))]
+                 [else i])]))
 
-;; (these unbox functions are temporary as the pos of the slider must be known
-;; searching for them will be added later.)
-;; unboxes first slider value for speeed of playhead
-(define (get-speed) (max .5 (* 4 (slider-value (first (filter slider? (ws-pl (unbox ws-box))))))))
-;; unboxes second and third slider values for distortion control
-(define (get-cutoff) (slider-value (second (filter slider? (ws-pl (unbox ws-box))))))
-(define (get-scale) (slider-value (third (filter slider? (ws-pl (unbox ws-box))))))
-;; unboxes fourth slider to get a delay in frames 0 to 1575 (1/28th of a sec)
-(define (get-delay) 
-  (inexact->exact (round (* 1575 (slider-value (fourth (filter slider? (ws-pl (unbox ws-box)))))))))
 ;; save-signal takes in a signal value and its pos in the saved-sig vector
 ;; the pos is also saved to know where the most recent signal is when drawing
 ;; number number -> void?
@@ -34,31 +55,34 @@
   (begin (vector-set! saved-sig pos s) (vector-set! saved-sig saved-sig-size pos)
          s))
 
-(signal-play 
+
+(signal-play  
  (network ()
           [ctr <= frame-ctr];; counter to save signals to saved-sig vector          
-          [v-pos = (modulo ctr saved-sig-size)] ;; makes sure the ctr isn't out of bounds
-          
+          [v-pos = (modulo ctr saved-sig-size)] ;; makes sure the ctr isn't out of bounds          
           
           [skip = (get-speed)] ;;determines the speed of the song from slider
-          ;; counts up in frames and resets after hitting songLength
-          [f <= (loop-ctr/variable songlen) skip]          
-          [frame = (inexact->exact (round f))]
+          ;; counts up in frames and resets after hitting current song's length
+          [f <= loop-ctr/variable2 (get-songlen) skip]          
+          [frame = (inexact->exact (round f))] ;; makes sure frame is an exact integer
           
-          ;; merge left and right signals
-          [r = (rs-ith/right drrr frame)]
-          [l = (rs-ith/left drrr frame)]
-          [s1 = (/ (+ r l) 2)]
+          ;; create song's signal at frame
+          [s1 <= playSong frame]
           
-          ;; merge left and right of delay signals
-          [d-frame = (modulo (+ frame (get-delay)) songlen)]
-          [r = (rs-ith/right drrr d-frame)]
-          [l = (rs-ith/left drrr d-frame)]
-          [s2 = (/ (+ r l) 2)]
+          ;; sin wave used for oscilating around playhead
+          [sin <= sine-wave 5]
           
+          ;; create delayed signal at d-frame
+          [d-frame = (modulo (+ frame 
+                                (inexact->exact (round (* sin (get-delay))))) 
+                             (get-songlen))]
+          [s2 <= playSong d-frame]
+          
+          ;; adds signals together
           [s = (/ (+ s1 s2) 2)]
+          
           ;; adds distortion given slider values
-          [d <= distortion (get-cutoff) (get-scale) s]
+          [d <= distortion (get-cutoff) (get-scale) s] 
           
           [out = (save-signal d v-pos)] ;; save signal to saved-sig vector
           ))
