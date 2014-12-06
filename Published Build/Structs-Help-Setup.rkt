@@ -10,21 +10,27 @@
 
 #|By:|#
 (define Team "awesome!")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; a piece is (piece string posn)
+;; a song is (song string rsound integer)
+;; -name: a string that is the song name
+;; -sound: the rsound that is the song
+;; -length: the songs length in frames
+(struct song (name rsound length) #:prefab)
+
+;; a piece is (piece posn)
 ;; -pos: a posn structure 
 ;; -id: a unique string identifying it from other pieces
 (struct piece (id pos) #:prefab)
 
-;; a rect is (rect string posn number number)
+;; a rect is (rect posn number number)
 ;; -w: width of the rectangle
 ;; -h: height of the rectangle
 (struct rect piece (w h) #:prefab)
 
-;; a circle is (circ string posn number)
+;; a circle is (circ posn number)
 ;; -r: radius of the circle
 (struct circ piece (r) #:prefab)
 
@@ -33,20 +39,16 @@
 ;; -empty
 ;; -(cons image list-of-images)
 
-;; an sprite is (sprite string posn list-of-images number)
-;; -images: list of frames to animate the sprite
-;; -frame: which image to get from images
-(struct sprite piece (images frame) #:prefab)
-
-;; a slider is (slider string posn number number number)
+;; a slider is (slider posn number number number)
 ;; -value: number from 0.0 to 1.0 that represents the
 ;;         relative height, 1.0 = top 0.0 = bottom
 ;;         (remember y coord is inverted)
 (struct slider rect (value) #:prefab)
 
-;; a button is (button string posn number number procedure)
+;; a button is (button posn number number procedure bool)
 ;; - function: the function that is run on the button being clicked (released)
 ;;             it is a procedure (lambda (world) ...) which takes in a world struct
+;;             and returns a world struct
 (struct button rect (function) #:prefab)
 
 ;; list-of-pieces is one of:
@@ -57,11 +59,14 @@
 ;; -false
 ;; -piece
 
-;; a world is (ws list-of-pieces maybe-piece)
+;; a world is (ws list-of-pieces maybe-piece integer boolean)
 ;; -pl: a list-of-pieces contianed in the world
 ;; -focus: where the piece currently being focused upon
 ;;         and false is interpreted as no piece being focused
-(struct ws (pl focus) #:prefab)
+;; -music: the pos in the SONGS list which dictates which song to play
+;;         an integer from 0 to (- (length SONGS) 1)
+;; -flang?: determines if the music wants to have a flang added to it
+(struct ws (pl focus music flang?) #:prefab)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Constants
@@ -71,8 +76,19 @@
 (define BKG (bitmap/file "backgroundImage Large.jpeg"))
 (define XSIZE (image-width BKG)) ;; scene's max x value
 (define YSIZE (image-height BKG)) ;; scene's max y value
-(define song (rs-read "Sounds\\DRR.wav")) ;song import
-(define songlen (rs-frames song))         ;song length
+(define SECOND 44100)
+;; Our logo: 
+(define LOGO-PIC (bitmap/file "Awesome.png"))
+
+;; Grabs the song paths in the directory \\Sounds\\
+(define SONG_PATHS (directory-list "Sounds\\"))
+
+(define SONGS ;; translates the paths from SONG_PATHS into a list of song structs
+  (map        ;; which each contain the songs name, the rsound to play the song,
+   (lambda (p);; and its length in frames
+     (local [(define s (rs-read (build-path (current-directory) "Sounds" p)))]
+       (song (path->string p) s (rs-frames s))))
+  SONG_PATHS))
 
 ;; slider constants: 
 ;; 0 > sY-top > sY-bottom > YSIZE
@@ -83,11 +99,22 @@
 (define SLIDERIMAGE (bitmap/file "slider2.jpg"))
 
 (define sH (image-height SLIDERIMAGE)) ;; sliders' height
-(define sW (image-width SLIDERIMAGE)) ;; sliders' width
+(define sW (image-width SLIDERIMAGE))  ;; sliders' width
+
+;; Button constants: 
+(define menuBH 20) ;; a menu button's height
+(define menuBW 80) ;; a menu button's width
+;; the sound selection menu drop down button's pos
+(define sound-menuPOS (make-posn 50 150)) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helper Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; a call to s will return the frames in x seconds
+(define (s x) (round (* SECOND x)))
+
+(check-expect (s 2) 88200)
 
 ;; distance is the distance between two posn in pixels
 ;; posn posn -> number
@@ -108,13 +135,36 @@
 (define (piece-same? p1 p2) 
   (string=? (piece-id p1) (piece-id p2)))
 
+(check-expect (piece-same? (piece "1" (make-posn 1 2)) (piece "1" (make-posn 2 5)))  #t)
+(check-expect (piece-same? (piece "1" (make-posn 1 2)) (piece "2" (make-posn 2 5)))  #f)
+
+;; adds some pieces to a list-of-pieces
+;; list-of-pieces list-of-pieces -> list-of-pieces
+(define (add-pieces pieces-to-add pieces)
+  (foldr cons pieces-to-add pieces))
+
+(check-expect (add-pieces (list 1 2) (list 1 2 3)) (list 1 2 3 1 2))
+
+;; removes some pieces from a list-of-pieces
+;; list-of-pieces list-of-pieces -> list-of-pieces
+(define (remove-pieces pieces-to-remove pieces)
+  (remove* pieces-to-remove pieces))
+
+(check-expect (remove-pieces (list (piece "1" (make-posn 1 2))) 
+                             (list (piece "1" (make-posn 1 2)) (piece "2" (make-posn 2 5))))
+                             (list (piece "2" (make-posn 2 5))))
+
 ;; push-piece replaces an updated version of a piece back into the list
 ;; list-of-pieces piece -> list-of-pieces
 (define (push-piece pieces p)
   (map (lambda (i) 
          (cond [(piece-same? i p) p]
                [else i]))
-       pieces))  
+       pieces))
+
+(check-expect (push-piece (list (piece "1" (make-posn 1 2)) (piece "2" (make-posn 2 5)))
+                          (piece "2" (make-posn 5 7)))
+              (list (piece "1" (make-posn 1 2)) (piece "2" (make-posn 5 7))))
 
 ;; Rectangle helper functions:
 
@@ -155,6 +205,7 @@
   (button (string-append "Reset-" (piece-id s)) 
           (make-posn x y) 20 20 (reset-slider s)))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Big-bang 2: Visualization of signals
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,11 +241,11 @@
   (local [(define s (vector-ref saved-sig (modulo (- start x) saved-sig-size)))
           (define bar (inexact->exact (round (* (abs s) 100))))]
     (place-image/align 
-     (rectangle 1 (+ 1 bar) "solid" (color bar 0 0)); for fun a rects go from black to red as height increases
+     (rectangle 1 bar "solid" (color bar 0 0))
      (/ x skip)
      (cond [(> s 0) (- 100 bar)]
            [else 100])
-     "left" "top"
+     "left" "top" 
      (cond [(>= (+ x 4) saved-sig-size) (empty-scene (/ saved-sig-size skip) 210)]
            [else (signal-pic-recur start (+ x skip) skip)]))))
 
@@ -216,13 +267,35 @@
 ;; Default Sliders:
 
 (define SPEED_SLIDER 
-  (slider "Speedcontrol" (make-posn 250 (* .75 sY-bottom)) sW sH 0.25))
+  (slider "Speedcontrol" (make-posn 200 (* .75 sY-bottom)) sW sH 0.25))
 (define DISTORT_SLIDER-CUT 
-  (slider "Distortion Cut-off" (make-posn 450 sY-top) sW sH 1))
+  (slider "Distortion Cut-off" (make-posn 375 sY-top) sW sH 1))
 (define DISTORT_SLIDER-SCALE 
-  (slider "Distortion Feather" (make-posn 650 sY-bottom) sW sH 0))
+  (slider "Distortion Feather" (make-posn 550 sY-bottom) sW sH 0))
 (define DELAY_SLIDER 
-  (slider "Delay" (make-posn 850 sY-bottom) sW sH 0))
+  (slider "Delay" (make-posn 725 sY-bottom) sW sH 0))
+(define FLANG_FREQ_SLIDER 
+  (slider "Flang Frequency" (make-posn 900 (* 4/5 sY-bottom)) sW sH 1))
+
+;; Drop down sound selection menu
+
+;; creates a list of buttons to choose what sound to play
+;; when you click on a button it removes all sound selection buttons and changes
+;; the world's music field to the selected sound
+(define SOUND_SELECT_MENU ;; list-of pieces
+  (map 
+   (lambda (i) 
+     (button (string-append "Sound-Menu-" (number->string i))
+             (local [(define column (floor (/ (* i menuBH) (/ YSIZE 2))))
+                     (define row (modulo i (floor (/ (/ YSIZE 2) menuBH))))]
+             (make-posn (+ (posn-x sound-menuPOS) (* column menuBW))
+                        (+ (posn-y sound-menuPOS) menuBH (* row menuBH))))
+              menuBW menuBH
+             (lambda (w) 
+               (struct-copy ws w 
+                            [pl (remove-pieces SOUND_SELECT_MENU (ws-pl w))]
+                            [music i]))))
+   (build-list (length SONGS) values)))
 
 
 (define INITIAL_WORLD 
@@ -235,6 +308,8 @@
        DISTORT_SLIDER-SCALE
        ;; slider for the delay
        DELAY_SLIDER
+       ;; slider for flang frequency
+       FLANG_FREQ_SLIDER
        ;; reset button for playhead speed
        (reset-button (get-x SPEED_SLIDER) (* .95 YSIZE) SPEED_SLIDER)
        ;; reset button for distortion cutoff
@@ -243,13 +318,25 @@
        (reset-button (get-x DISTORT_SLIDER-SCALE) (* .95 YSIZE) DISTORT_SLIDER-SCALE)
        ;; reset button for the delay
        (reset-button (get-x DELAY_SLIDER) (* .95 YSIZE) DELAY_SLIDER)
+       ;; reset button for the flang freqency
+       (reset-button (get-x FLANG_FREQ_SLIDER) (* .95 YSIZE) FLANG_FREQ_SLIDER)
+       ;; button to toggle flanging of music
+       (button "Flang" (make-posn (get-x DELAY_SLIDER) (* .975 YSIZE)) 40 20 
+               (lambda (w) (struct-copy ws w [flang? (not (ws-flang? w))])))
        ;; button that makes the "drawing-wave" world
-       (button "See Signals" (make-posn 50 50) 60 20 
+       (button "See Signals" (make-posn 50 50) 60 20
                (lambda (w) (begin (thread signal-view) w)))
-       )
-      #f))
+       ;; the drop down menu button
+       (button "Sound-Menu" sound-menuPOS menuBW menuBH 
+               (lambda (w) 
+                 (struct-copy ws w
+                              [pl (if (ormap (lambda (p) (eq? p (first SOUND_SELECT_MENU)))
+                                             (ws-pl w))                                      
+                                      (remove-pieces SOUND_SELECT_MENU (ws-pl w))
+                                      (add-pieces SOUND_SELECT_MENU (ws-pl w)))]))))
+      #f 0 #f))
 
 ;; world state box is used for signals
 (define ws-box (box INITIAL_WORLD))
 
-;(test)
+;;(test)
