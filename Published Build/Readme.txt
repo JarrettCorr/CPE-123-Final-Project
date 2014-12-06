@@ -1,5 +1,6 @@
 Networks-fun!
 By: (Define TEAM "Awesome")
+*Please run Networks-and-Run.rkt from terminal*
 
 File Decriptions: 
 -Networks-and-Run.rkt: 
